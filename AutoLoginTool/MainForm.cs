@@ -11,12 +11,27 @@ using System.IO;
 
 namespace AutoLoginTool
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        private const string ext = ".alg";
+        public readonly static string ext = ".alg";
 
-        void AddProfile(string profileName)
+        public ToolStripItem FindProfile(string profileName)
         {
+            foreach (ToolStripItem item in steamToolStripMenuItem.DropDownItems)
+            {
+                if (item.Text == profileName)
+                    return item;
+            }
+
+            return null;
+        }
+
+        public bool AddProfile(string profileName)
+        {
+            // Do not create profile if already exists
+            if (FindProfile(profileName) != null)
+                return false;
+
             ToolStripMenuItem profile = new ToolStripMenuItem(profileName);
 
             var login = new ToolStripMenuItem("Login");
@@ -39,9 +54,11 @@ namespace AutoLoginTool
             profile.DropDownItems.AddRange(newProfile);
 
             steamToolStripMenuItem.DropDownItems.Add(profile);
+
+            return true;
         }
 
-        void GetProfiles()
+        public void GetProfiles()
         {
             string[] files = Directory.GetFiles(Environment.CurrentDirectory);
 
@@ -56,35 +73,10 @@ namespace AutoLoginTool
             }
         }
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
             GetProfiles();
-        }
-
-        private void fileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void steamToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            if (textBox1.Text.Length == 0 || maskedTextBox1.Text.Length == 0 || nameProfile.Text.Length == 0)
-                return;
-
-            AddProfile(nameProfile.Text);
-
-            textBox1.Clear();
-            maskedTextBox1.Clear();
-            nameProfile.Clear();
-
-
-            File.WriteAllText(nameProfile.Text + ext, textBox1.Text + ":" + maskedTextBox1.Text);
         }
 
         private void LoginToSteam(string profileSelected)
@@ -96,14 +88,10 @@ namespace AutoLoginTool
 
             if (!File.Exists(path))
             {
-                foreach (ToolStripItem item in steamToolStripMenuItem.DropDownItems)
-                {
-                    if (item.Text == profileSelected)
-                    {
-                        steamToolStripMenuItem.DropDownItems.Remove(item);
-                        break;
-                    }
-                }
+                var profileItem = FindProfile(profileSelected);
+                if (profileItem != null)
+                    steamToolStripMenuItem.DropDownItems.Remove(profileItem);
+
                 return;
             }
 
@@ -125,9 +113,9 @@ namespace AutoLoginTool
             SteamLoginer.Login(user, pass);
         }
 
-        private void steamToolStripMenuItem_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        private void createProfileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            new CreateProfileForm(this).ShowDialog();
         }
     }
 }
