@@ -198,7 +198,6 @@ namespace AutoLoginTool
             this.setSecretGroup.Name = "setSecretGroup";
             this.setSecretGroup.Size = new System.Drawing.Size(200, 159);
             this.setSecretGroup.TabIndex = 11;
-            this.setSecretGroup.Visible = false;
             // 
             // label4
             // 
@@ -248,7 +247,8 @@ namespace AutoLoginTool
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "MainForm";
-            this.Text = "Create a Secret";
+            this.ShowIcon = false;
+            this.Text = "Auto Login Tool";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.unlockGroup.ResumeLayout(false);
