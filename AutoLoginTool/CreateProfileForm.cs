@@ -36,7 +36,12 @@ namespace AutoLoginTool
                 return;
 
             if (mainForm.AddProfile(nameProfile.Text))
-                File.WriteAllText(nameProfile.Text + MainForm.ext, textBox1.Text + ":" + maskedTextBox1.Text);
+            {
+                if (!Directory.Exists(MainForm.PROFILE_DIR))
+                    Directory.CreateDirectory(MainForm.PROFILE_DIR);
+
+                File.WriteAllText(MainForm.PROFILE_DIR + nameProfile.Text + MainForm.PROFILE_EXT, Encryption.EncryptString(MainForm.ENC_SECRET, textBox1.Text + "\n" + maskedTextBox1.Text));
+            }
             else
                 MessageBox.Show("Profile already exists!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 

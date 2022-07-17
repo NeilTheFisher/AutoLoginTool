@@ -8,12 +8,16 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace AutoLoginTool
 {
     public partial class MainForm : Form
     {
-        public readonly static string ext = ".alg";
+        public static string ENC_SECRET = "";
+        public static string SECRET_FILENAME = "secret.al";
+        public const string PROFILE_DIR = "profiles\\";
+        public const string PROFILE_EXT = ".alp";
 
         public ToolStripItem FindProfile(string profileName)
         {
@@ -43,8 +47,8 @@ namespace AutoLoginTool
             var remove = new ToolStripMenuItem("Remove");
             remove.Click += (object sender2, EventArgs e2) =>
             {
-                if (File.Exists(profile.Text + ext))
-                    File.Delete(profile.Text + ext);
+                if (File.Exists(PROFILE_DIR + profile.Text + PROFILE_EXT))
+                    File.Delete(PROFILE_DIR + profile.Text + PROFILE_EXT);
 
                 steamToolStripMenuItem.DropDownItems.Remove(profile);
             };
@@ -60,11 +64,16 @@ namespace AutoLoginTool
 
         public void GetProfiles()
         {
-            string[] files = Directory.GetFiles(Environment.CurrentDirectory);
+            if (!Directory.Exists(PROFILE_DIR))
+                return;
+
+            string[] files = Directory.GetFiles(PROFILE_DIR);
+
+            bool addedProfile = false;
 
             foreach (string fileName in files)
             {
-                if (fileName.EndsWith(ext))
+                if (fileName.EndsWith(PROFILE_EXT))
                 {
                     var name = fileName.Substring(fileName.LastIndexOf('\\') + 1);
                     string profileName = name.Substring(0, name.Length - 4);
@@ -76,7 +85,12 @@ namespace AutoLoginTool
         public MainForm()
         {
             InitializeComponent();
-            GetProfiles();
+
+            if (File.Exists(SECRET_FILENAME))
+            {
+                setSecretGroup.Visible = false;
+                unlockGroup.Visible = true;
+            }
         }
 
         private void LoginToSteam(string profileSelected)
@@ -84,7 +98,7 @@ namespace AutoLoginTool
             if (profileSelected.Length == 0)
                 return;
 
-            string path = profileSelected + ext;
+            string path = PROFILE_DIR + profileSelected + PROFILE_EXT;
 
             if (!File.Exists(path))
             {
@@ -100,7 +114,9 @@ namespace AutoLoginTool
             if (loginCredentials.Length == 0)
                 return;
 
-            var userPass = loginCredentials.Split(':');
+            loginCredentials = Encryption.DecryptString(ENC_SECRET, loginCredentials);
+
+            var userPass = loginCredentials.Split('\n');
 
             if (userPass.Length < 2)
                 return;
@@ -116,6 +132,65 @@ namespace AutoLoginTool
         private void createProfileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new CreateProfileForm(this).ShowDialog();
+        }
+
+        private void saveSecret_Click(object sender, EventArgs e)
+        {
+            if (enterSecretTextbox.Text != confirmSecretTextbox.Text)
+            {
+                MessageBox.Show("The secret passphrases do not match", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (enterSecretTextbox.Text.Length < 8)
+            {
+                MessageBox.Show("Secret is not complex enough (8 characters min.)", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            ENC_SECRET = enterSecretTextbox.Text;
+
+            File.WriteAllText(SECRET_FILENAME, Encryption.ComputeSha256Hash(ENC_SECRET));
+
+            profilesToolStripMenuItem.Enabled = true;
+            actionsToolStripMenuItem.Enabled = true;
+
+            setSecretGroup.Visible = false;
+        }
+
+        private void unlockButton_Click(object sender, EventArgs e)
+        {
+            if (!File.Exists(SECRET_FILENAME))
+                return;
+
+            string secretHash = File.ReadAllText(SECRET_FILENAME);
+
+            if (Encryption.ComputeSha256Hash(validateSecretTextbox.Text) != secretHash)
+            {
+                MessageBox.Show("Incorrect secret", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            GetProfiles();
+
+            profilesToolStripMenuItem.Enabled = true;
+            actionsToolStripMenuItem.Enabled = true;
+
+            unlockGroup.Visible = false;
+        }
+
+        private void resetSecretButton_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to do this?\nThis will result in all profiles being removed.", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+            {
+                if (Directory.Exists(PROFILE_DIR))
+                    Directory.Delete(PROFILE_DIR, true);
+                
+                File.Delete(SECRET_FILENAME);
+
+                unlockGroup.Visible = false;
+                setSecretGroup.Visible = true;
+            }
         }
     }
 }
