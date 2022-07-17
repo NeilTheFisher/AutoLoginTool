@@ -15,7 +15,7 @@ namespace AutoLoginTool
     public partial class MainForm : Form
     {
         public static string ENC_SECRET = "";
-        public static string SECRET_FILENAME = "secret.al";
+        public const string SECRET_FILENAME = "secret.al";
         public const string PROFILE_DIR = "profiles\\";
         public const string PROFILE_EXT = ".alp";
 

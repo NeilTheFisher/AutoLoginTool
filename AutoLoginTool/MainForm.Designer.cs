@@ -101,7 +101,7 @@ namespace AutoLoginTool
             this.saveSecret.Location = new System.Drawing.Point(43, 116);
             this.saveSecret.Name = "saveSecret";
             this.saveSecret.Size = new System.Drawing.Size(100, 23);
-            this.saveSecret.TabIndex = 1;
+            this.saveSecret.TabIndex = 3;
             this.saveSecret.Text = "Save";
             this.saveSecret.UseVisualStyleBackColor = true;
             this.saveSecret.Click += new System.EventHandler(this.saveSecret_Click);
@@ -110,15 +110,17 @@ namespace AutoLoginTool
             // 
             this.enterSecretTextbox.Location = new System.Drawing.Point(43, 33);
             this.enterSecretTextbox.Name = "enterSecretTextbox";
+            this.enterSecretTextbox.PasswordChar = '*';
             this.enterSecretTextbox.Size = new System.Drawing.Size(100, 20);
-            this.enterSecretTextbox.TabIndex = 2;
+            this.enterSecretTextbox.TabIndex = 1;
             // 
             // confirmSecretTextbox
             // 
             this.confirmSecretTextbox.Location = new System.Drawing.Point(43, 80);
             this.confirmSecretTextbox.Name = "confirmSecretTextbox";
+            this.confirmSecretTextbox.PasswordChar = '*';
             this.confirmSecretTextbox.Size = new System.Drawing.Size(100, 20);
-            this.confirmSecretTextbox.TabIndex = 3;
+            this.confirmSecretTextbox.TabIndex = 2;
             // 
             // label1
             // 
