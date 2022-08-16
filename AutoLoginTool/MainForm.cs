@@ -171,6 +171,7 @@ namespace AutoLoginTool
                 return;
             }
 
+            ENC_SECRET = validateSecretTextbox.Text;
             GetProfiles();
 
             profilesToolStripMenuItem.Enabled = true;

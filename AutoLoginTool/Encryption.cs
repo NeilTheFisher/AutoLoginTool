@@ -8,6 +8,18 @@ namespace AutoLoginTool
 {
     public static class Encryption
     {
+        public static string CreateMD5(string input)
+        {
+            // Use input string to calculate MD5 hash
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                string hex = BitConverter.ToString(hashBytes).Replace("-", string.Empty);
+                return hex;
+            }
+        }
         public static string ComputeSha256Hash(string rawData)
         {
             // Create a SHA256   
@@ -27,7 +39,7 @@ namespace AutoLoginTool
         }
         public static string EncryptString(string key, string plainText)
         {
-            key = ComputeSha256Hash(key).Substring(0, 32);
+            key = CreateMD5(key);
             byte[] iv = new byte[16];
             byte[] array;
 
@@ -57,7 +69,7 @@ namespace AutoLoginTool
 
         public static string DecryptString(string key, string cipherText)
         {
-            key = ComputeSha256Hash(key).Substring(0, 32);
+            key = CreateMD5(key);
             byte[] iv = new byte[16];
             byte[] buffer = Convert.FromBase64String(cipherText);
 
