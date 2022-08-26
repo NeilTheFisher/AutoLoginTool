@@ -15,13 +15,26 @@ namespace AutoLoginTool
     public partial class MainForm : Form
     {
         public static string ENC_SECRET = "";
-        public const string SECRET_FILENAME = "secret.al";
+        public const string SECRET_FILENAME = "secret.alt";
         public const string PROFILE_DIR = "profiles\\";
         public const string PROFILE_EXT = ".alp";
+
+        private bool unlocked = false;
 
         public ToolStripItem FindProfile(string profileName)
         {
             foreach (ToolStripItem item in steamToolStripMenuItem.DropDownItems)
+            {
+                if (item.Text == profileName)
+                    return item;
+            }
+
+            return null;
+        }
+
+        public MenuItem FindProfileMenu(string profileName)
+        {
+            foreach (MenuItem item in notifyIcon.ContextMenu.MenuItems[0].MenuItems[0].MenuItems)
             {
                 if (item.Text == profileName)
                     return item;
@@ -36,28 +49,36 @@ namespace AutoLoginTool
             if (FindProfile(profileName) != null)
                 return false;
 
+            MenuItem profileMenu = new MenuItem(profileName);
             ToolStripMenuItem profile = new ToolStripMenuItem(profileName);
 
-            var login = new ToolStripMenuItem("Login");
-            login.Click += (object sender2, EventArgs e2) =>
+            EventHandler LoginHandler = (object sender, EventArgs e) =>
             {
                 LoginToSteam(profile.Text);
             };
 
-            var remove = new ToolStripMenuItem("Remove");
-            remove.Click += (object sender2, EventArgs e2) =>
+            EventHandler RemoveHandler = (object sender, EventArgs e) =>
             {
                 if (File.Exists(PROFILE_DIR + profile.Text + PROFILE_EXT))
                     File.Delete(PROFILE_DIR + profile.Text + PROFILE_EXT);
 
                 steamToolStripMenuItem.DropDownItems.Remove(profile);
+                notifyIcon.ContextMenu.MenuItems[0].MenuItems[0].MenuItems.Remove(profileMenu);
             };
+
+            ToolStripItem login = new ToolStripMenuItem("Login");
+            login.Click += LoginHandler;
+
+            ToolStripItem remove = new ToolStripMenuItem("Remove");
+            remove.Click += RemoveHandler;
 
             var newProfile = new ToolStripItem[] { login, remove };
 
             profile.DropDownItems.AddRange(newProfile);
+            profileMenu.MenuItems.AddRange(new MenuItem[] { new MenuItem("Login", LoginHandler), new MenuItem("Remove", RemoveHandler) });
 
             steamToolStripMenuItem.DropDownItems.Add(profile);
+            notifyIcon.ContextMenu.MenuItems[0].MenuItems[0].MenuItems.Add(profileMenu);
 
             return true;
         }
@@ -68,8 +89,6 @@ namespace AutoLoginTool
                 return;
 
             string[] files = Directory.GetFiles(PROFILE_DIR);
-
-            bool addedProfile = false;
 
             foreach (string fileName in files)
             {
@@ -85,6 +104,12 @@ namespace AutoLoginTool
         public MainForm()
         {
             InitializeComponent();
+
+            notifyIcon.ContextMenu = new ContextMenu(new MenuItem[] {
+                new MenuItem("Profiles", new MenuItem[]{ new MenuItem("Steam", new MenuItem[]{}) }),
+                new MenuItem("Actions", new MenuItem[]{ new MenuItem("Create Profile", (object sender, EventArgs e) => { new CreateProfileForm(this).ShowDialog(); }) }),
+                new MenuItem("Exit", (object sender, EventArgs e) => { Application.Exit(); })
+            });
 
             if (File.Exists(SECRET_FILENAME))
             {
@@ -104,7 +129,16 @@ namespace AutoLoginTool
             {
                 var profileItem = FindProfile(profileSelected);
                 if (profileItem != null)
+                {
                     steamToolStripMenuItem.DropDownItems.Remove(profileItem);
+                }
+
+                var profileMenuItem = FindProfileMenu(profileSelected);
+
+                if (profileMenuItem != null)
+                {
+                    notifyIcon.ContextMenu.MenuItems[0].MenuItems[0].MenuItems.Remove(profileMenuItem);
+                }
 
                 return;
             }
@@ -142,12 +176,6 @@ namespace AutoLoginTool
                 return;
             }
 
-            if (enterSecretTextbox.Text.Length < 8)
-            {
-                MessageBox.Show("Secret is not complex enough (8 characters min.)", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
             ENC_SECRET = enterSecretTextbox.Text;
 
             File.WriteAllText(SECRET_FILENAME, Encryption.ComputeSha256Hash(ENC_SECRET));
@@ -156,6 +184,7 @@ namespace AutoLoginTool
             actionsToolStripMenuItem.Enabled = true;
 
             setSecretGroup.Visible = false;
+            unlocked = true;
         }
 
         private void unlockButton_Click(object sender, EventArgs e)
@@ -178,6 +207,7 @@ namespace AutoLoginTool
             actionsToolStripMenuItem.Enabled = true;
 
             unlockGroup.Visible = false;
+            unlocked = true;
         }
 
         private void resetSecretButton_Click(object sender, EventArgs e)
@@ -191,7 +221,24 @@ namespace AutoLoginTool
 
                 unlockGroup.Visible = false;
                 setSecretGroup.Visible = true;
+                unlocked = false;
             }
+        }
+
+        private void MainForm_Resize(object sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized && unlocked) {
+                Hide();
+                notifyIcon.Visible = true;
+                MessageBox.Show("ALT has been minimized to your tray!", "Auto Login Tool", MessageBoxButtons.OK, MessageBoxIcon.Information, MessageBoxDefaultButton.Button1, MessageBoxOptions.DefaultDesktopOnly);
+            }
+        }
+
+        private void notifyIcon_DoubleClick(object sender, EventArgs e)
+        {
+            Show();
+            this.WindowState = FormWindowState.Normal;
+            notifyIcon.Visible = false;
         }
     }
 }
